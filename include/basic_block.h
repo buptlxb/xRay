@@ -17,11 +17,14 @@ class BasicBlock {
         vector<BasicBlock *> predecessors;
         BasicBlock *hashNext;
         Function *func;
-        bool disasm_flags;
+        bool disasmed;
         bool disasm_pending;
+        bool visited;
     public:
+        typedef vector<DISASM>::const_iterator ConstDisasmIter;
         typedef vector<BasicBlock *>::iterator BBPtrIter;
         typedef vector<BasicBlock *>::const_iterator ConstBBPtrIter;
+        typedef vector<BasicBlock *>::const_reverse_iterator ConstRevBBPtrIter;
         BasicBlock(ADDR eip, ADDR vAddr, Function *func);
         //BasicBlock(const BasicBlock &bb);
         //BasicBlock & operator= (const BasicBlock &bb);
@@ -32,12 +35,18 @@ class BasicBlock {
         void setHashNext(BasicBlock *next) { hashNext = next;}
         const vector<BasicBlock *>& getSuccessors() const;
         ADDR getFirstInstAddr() const { return insts[0].VirtualAddr;}
-        bool isDisasm() { return disasm_flags; }
-        void setDisasm(bool isDisasmed) { disasm_flags = isDisasmed; }
+        bool isDisasmed() { return disasmed; }
+        void setDisasmed(bool isDisasmed) { disasmed = isDisasmed; }
         bool isDisasmPending() { return disasm_pending; }
         void setDisasmPending(bool pending) { disasm_pending = pending; }
+        bool isVisited() { return visited; }
+        void setVisited(bool visit) { visited = visit; }
         char *toString(char *buf, int size) const;
+        void dumpBiref() const;
         void dump() const;
+        bool isLeaf() const {
+            return insts.back().Instruction.BranchType == RetType;
+        }
 };
 
 #endif

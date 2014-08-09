@@ -4,7 +4,7 @@
 #include <cstring>
 
 BasicBlock::BasicBlock(ADDR eip, ADDR vAddr, Function *func):
-    hashNext(NULL), func(func), disasm_flags(false), disasm_pending(false)
+    hashNext(NULL), func(func), disasmed(false), disasm_pending(false)
 {
     DISASM MyDisasm;
     memset(&MyDisasm, 0, sizeof(DISASM));
@@ -35,11 +35,12 @@ BasicBlock & operator= (const BasicBlock &bb)
 
 void BasicBlock::disasm()
 {
-    if (isDisasm())
+    if (isDisasmed())
         return;
-    setDisasm(true);
+    setDisasmed(true);
 
     DISASM MyDisasm = insts[0];
+    insts.pop_back();
     //printf("\t\tStart BasicBlock::disasm 0x%llx\n", (ADDR)this);
     while (1){
         // Fix SecurityBlock 
@@ -95,8 +96,9 @@ void BasicBlock::disasm()
                         }
                     case RetType:
                         //puts("\t\t\tCONTROL_TRANSFER : Disasm finished");
-                        char buf[1024];
+                        //char buf[1024];
                         //printf("\t\t%s\n\n", toString(buf, sizeof(buf)));
+                        insts.push_back(MyDisasm);
                         return;
                     default:
                         fprintf(stderr, "unknown branchtype %d (0x%llx) in Basic Block 0x%llx\n", MyDisasm.Instruction.BranchType, (ADDR)MyDisasm.VirtualAddr, getFirstInstAddr());
@@ -155,9 +157,17 @@ char *BasicBlock::toString(char *buf, int size) const
     return buf;
 }
 
-void BasicBlock::dump() const
+void BasicBlock::dumpBiref() const
 {
     char buf[1024];
-    printf("%s\n\n", toString(buf, sizeof(buf)));
+    printf("%s\n", toString(buf, sizeof(buf)));
 }
 
+void BasicBlock::dump() const
+{
+    dumpBiref();
+    for (ConstDisasmIter iter = insts.begin(); iter != insts.end(); iter++) {
+    printf("\t\t\t0x%.8lx\t%s\n", iter->VirtualAddr, (char *)&iter->CompleteInstr);
+    }
+    puts("");
+}

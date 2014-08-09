@@ -83,7 +83,7 @@ void Function::disasm()
         bb->disasm();
         const vector<BasicBlock *> &succ = bb->getSuccessors();
         for (BasicBlock::ConstBBPtrIter iter = succ.begin(); iter != succ.end(); iter++) {
-            if ((*iter)->isDisasm() || (*iter)->isDisasmPending())
+            if ((*iter)->isDisasmed() || (*iter)->isDisasmPending())
                 continue;
             que.push(*iter);
             (*iter)->setDisasmPending(true);
@@ -115,4 +115,16 @@ BasicBlock *Function::findBasicBlock(ADDR addr)
 void Function::dumpBiref() const
 {
     printf("\t\033[32m%-18s\033[m 0x%llx ~ 0x%llx %ld basic blocks\n", funcName, virStart, getVirAddr(mapEnd), basicBlocks.size());
+}
+
+void Function::mergeBB()
+{
+    for (BasicBlock::ConstRevBBPtrIter iter = basicBlocks.rbegin(); iter!=basicBlocks.rend(); iter++) {
+        BasicBlock* bbptr = *iter;
+        if (bbptr->isVisited())
+            continue;
+        bbptr->setVisited(true);
+        if (bbptr->isLeaf()) {
+        }
+    }
 }

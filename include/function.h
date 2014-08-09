@@ -39,5 +39,6 @@ class Function {
         char *getFuncName() { return funcName; }
         void dumpBiref() const;
         const vector<BasicBlock *> &getBasicBlocks() { return basicBlocks; }
+        void mergeBB();
 };
 #endif
