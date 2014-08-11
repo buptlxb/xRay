@@ -4,6 +4,7 @@
 #include <vector>
 #include "basic_block.h"
 #include "type.h"
+#include <set>
 
 #define HASH_TABLE_ORDER 6
 
@@ -17,7 +18,9 @@ class Function {
         ADDR mapEnd;
         ADDR virStart;
         char *funcName;
-        vector<BasicBlock*> basicBlocks;
+        vector<BasicBlock *> basicBlocks;
+        //vector<BasicBlock *> leafBBs;
+        set<BasicBlock *> pairBBs;
         BasicBlock* hashTableBB[1<<HASH_TABLE_ORDER];
         ADDR hash(ADDR addr) {
             return addr & ((1<<HASH_TABLE_ORDER)-1);
@@ -39,6 +42,11 @@ class Function {
         char *getFuncName() { return funcName; }
         void dumpBiref() const;
         const vector<BasicBlock *> &getBasicBlocks() { return basicBlocks; }
-        void mergeBB();
+        long mergeBB();
+        void findCandidatePair();
+        void reduction();
+        set<BasicBlock *> &getCandidatePairs() {
+            return pairBBs;
+        }
 };
 #endif

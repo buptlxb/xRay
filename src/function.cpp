@@ -1,5 +1,6 @@
 #include "function.h"
 #include "basic_block.h"
+#include "taint_block.h"
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -114,17 +115,72 @@ BasicBlock *Function::findBasicBlock(ADDR addr)
 
 void Function::dumpBiref() const
 {
-    printf("\t\033[32m%-18s\033[m 0x%llx ~ 0x%llx %ld basic blocks\n", funcName, virStart, getVirAddr(mapEnd), basicBlocks.size());
+    printf("\t\033[32m%-18s\033[m 0x%llx ~ 0x%llx %ld basic blocks candidate pairs %ld\n", funcName, virStart, getVirAddr(mapEnd), basicBlocks.size(), pairBBs.size());
 }
 
-void Function::mergeBB()
+long Function::mergeBB()
 {
-    for (BasicBlock::ConstRevBBPtrIter iter = basicBlocks.rbegin(); iter!=basicBlocks.rend(); iter++) {
+    long count = 0;
+    for (set<BasicBlock *>::iterator iter = pairBBs.begin(); iter!=pairBBs.end(); iter++) {
         BasicBlock* bbptr = *iter;
+        
+        assert(bbptr->getSuccessors().size() == 2);
+        TaintBlock *left = new TaintBlock(bbptr->getSuccessors().front());
+        TaintBlock *right = new TaintBlock(bbptr->getSuccessors().back());
+        if (*left == *right) {
+            bbptr->dump();
+            left->dump();
+            bbptr->getSuccessors().front()->dump();
+            right->dump();
+            bbptr->getSuccessors().back()->dump();
+            count++;
+        }
+        free(left);
+        free(right);
+    }
+    return count;
+}
+
+void Function::findCandidatePair()
+{
+   // for (BasicBlock::ConstRevBBPtrIter iter = leafBBs.rbegin(); iter!=leafBBs.rend(); iter++) {
+    for (BasicBlock::BBPtrIter iter = basicBlocks.begin(); iter!=basicBlocks.end(); iter++) {
+        BasicBlock* bbptr = *iter;
+        if (!bbptr->isLeaf())
+            continue;
         if (bbptr->isVisited())
             continue;
-        bbptr->setVisited(true);
-        if (bbptr->isLeaf()) {
-        }
+        const vector<BasicBlock *> preds = bbptr->getPredecessors();
+        if (preds.size() != 1)
+            continue;
+        BasicBlock *pred = preds.front();
+        if (pred->getSuccessors().size() != 2)
+            continue;
+        pairBBs.insert(pred);
     }
+}
+
+void Function::reduction()
+{
+    bool change = false;
+    do {
+        change = false;
+        for (BasicBlock::BBPtrIter iter = basicBlocks.begin(); iter!=basicBlocks.end(); iter++) {
+            BasicBlock* bbptr = *iter;
+            if (bbptr->isRemoved()) {
+                basicBlocks.erase(iter);
+                break;
+            }
+            const vector<BasicBlock *> succs = bbptr->getSuccessors();
+            if (succs.size() != 1)
+                continue;
+            BasicBlock *succ = succs.front();
+            if (succ->getPredecessors().size() != 1)
+                continue;
+            
+            bbptr->merge(succ);
+            succ->setRemoved(true);
+            change = true;
+        }
+    } while (change);
 }

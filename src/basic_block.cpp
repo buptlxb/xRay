@@ -5,6 +5,7 @@
 
 BasicBlock::BasicBlock(ADDR eip, ADDR vAddr, Function *func):
     hashNext(NULL), func(func), disasmed(false), disasm_pending(false)
+    , visited(false)
 {
     DISASM MyDisasm;
     memset(&MyDisasm, 0, sizeof(DISASM));
@@ -130,11 +131,6 @@ void BasicBlock::addPredecessor(BasicBlock *bb)
     predecessors.push_back(bb);
 }
 
-const vector<BasicBlock *>& BasicBlock::getSuccessors() const
-{
-    return successors;
-}
-
 char *BasicBlock::toString(char *buf, int size) const
 {
     snprintf(buf, size, "\t\t\t0x%llx(0x%llx) %ld instructions", (ADDR)this, getFirstInstAddr(), insts.size());
@@ -170,4 +166,11 @@ void BasicBlock::dump() const
     printf("\t\t\t0x%.8lx\t%s\n", iter->VirtualAddr, (char *)&iter->CompleteInstr);
     }
     puts("");
+}
+
+void BasicBlock::merge(BasicBlock *that)
+{
+    this->successors.clear();
+    this->successors.insert(successors.end(), that->getSuccessors().begin(), that->getSuccessors().end());
+    this->insts.insert(insts.end(), that->getInsts().begin(), that->getInsts().end());
 }

@@ -89,12 +89,23 @@ void BinInfo::dumpFunc()
 
 void BinInfo::disasm()
 {
+    long pcount = 0;
+    long bcount = 0;
     for (FunctionIter iter = funcInfo.begin(); iter != funcInfo.end(); iter++) {
         iter->disasm();
-        iter->dumpBiref();
+        //iter->dumpBiref();
+        iter->reduction();
+        iter->findCandidatePair();
+        //iter->dumpBiref();
+        pcount += iter->getCandidatePairs().size();
+        bcount += iter->mergeBB();
+#if 0
         const vector<BasicBlock *> vBB = iter->getBasicBlocks();
         for (BasicBlock::ConstBBPtrIter iter = vBB.begin(); iter != vBB.end(); iter++) {
             (*iter)->dump();
         }
+#endif
     }
+    printf("Count of Pairs: %ld\n", pcount);
+    printf("Count of Equal Pairs: %ld\n", bcount);
 }
